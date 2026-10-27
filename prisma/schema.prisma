@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String      @id @default(uuid())
+  firstName               String      @map("first_name")
+  lastName                String      @map("last_name")
+  email                   String      @unique
+  passwordHash            String      @map("password_hash")
+  phone                   String
+  oabCpf                  String      @map("oab_cpf")
+  avatarUrl               String?     @map("avatar_url")
+  googleCalendarConnected Boolean     @default(false) @map("google_calendar_connected")
+  googleRefreshToken      String?     @map("google_refresh_token")
+  googleCalendarId        String?     @map("google_calendar_id")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  clients                 Client[]
+  cases                   Case[]
+  hearings                Hearing[]
+  diligences              Diligence[]
+
+  @@map("users")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  email     String?
+  phone     String?
+  cpfCnpj   String?  @map("cpf_cnpj")
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?  @map("zip_code")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+  cases     Case[]
+
+  @@map("clients")
+}
+
+model Case {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  clientId    String        @map("client_id")
+  caseNumber  String        @map("case_number")
+  court       String?
+  type        String
+  subject     String
+  status      String
+  description String?
+  filingDate  DateTime?     @map("filing_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  user        User          @relation(fields: [userId], references: [id])
+  client      Client        @relation(fields: [clientId], references: [id])
+  hearings    Hearing[]
+  diligences  Diligence[]
+  history     CaseHistory[]
+
+  @@map("cases")
+}
+
+model CaseHistory {
+  id          String   @id @default(uuid())
+  caseId      String   @map("case_id")
+  action      String   @map("andamento")
+  provision   String   @map("providencia")
+  date        DateTime @default(now())
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@map("case_history")
+}
+
+model Hearing {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  caseId      String   @map("case_id")
+  title       String
+  date        DateTime
+  location    String?
+  description String?
+  status      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id])
+  case        Case     @relation(fields: [caseId], references: [id])
+
+  @@map("hearings")
+}
+
+model Diligence {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  caseId          String?  @map("case_id")
+  attorneyName    String   @map("attorney_name")
+  attorneyOab     String   @map("attorney_oab")
+  attorneyPhone   String   @map("attorney_phone")
+  attorneyEmail   String?  @map("attorney_email")
+  date            DateTime
+  court           String?
+  taskType        String   @map("task_type")
+  taskDescription String   @map("task_description")
+  feeAmount       Float?   @map("fee_amount")
+  status          String
+  outcome         String?
+  documents       Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id])
+  case            Case?    @relation(fields: [caseId], references: [id])
+
+  @@map("diligences")
+}
